@@ -1,0 +1,2 @@
+pymodbus>=3.6,<4.0
+paho-mqtt>=1.6,<2.0

@@ -1,0 +1,33 @@
+services:
+  jkbms2mqtt:
+    build: .
+    # Si prefieres imagen ya construida en lugar de build local, comenta "build: ."
+    # y descomenta la línea image: con tu registro.
+    # image: ghcr.io/myckiecat/jkbms2mqtt:latest
+    container_name: jkbms2mqtt
+    restart: unless-stopped
+    environment:
+      # --- Gateway EW11 (RS485 -> TCP) ---
+      MODBUS_IP: "192.168.1.100"
+      MODBUS_PORT: "502"
+
+      # --- Broker MQTT (VM 200, el nuevo de la migración) ---
+      MQTT_HOST: "192.168.1.207"
+      MQTT_PORT: "1883"
+      MQTT_USER: ""
+      MQTT_PASS: ""
+
+      # --- Baterías: nombre:unit_id separadas por coma ---
+      # Arrancamos SOLO con la maestra para validar. La esclava (battery_2:2)
+      # se añade DESPUÉS de confirmar que battery_1 lee bien.
+      BATTERIES: "battery_1:1"
+
+      # --- Modo de lectura: block (rápido) o single (registro a registro) ---
+      # Si con "block" el EW11 rechaza las peticiones (>125 registros), cambia a "single".
+      READ_MODE: "block"
+
+      # --- Sondeo y depuración ---
+      POLL_INTERVAL: "10"
+      DEBUG: "true"
+
+      HA_DISCOVERY_PREFIX: "homeassistant"
