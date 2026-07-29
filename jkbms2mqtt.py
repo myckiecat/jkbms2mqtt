@@ -45,7 +45,7 @@ POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "10"))
 
 # Modo de lectura: "block" (rápido, bloques grandes) o "single" (registro a registro,
 # más lento pero compatible con EW11 que limitan a 125 registros por petición)
-READ_MODE = os.getenv("READ_MODE", "block").lower()
+READ_MODE = os.getenv("READ_MODE", "single").lower()
 
 # Prefijo de discovery de HA
 HA_DISCOVERY_PREFIX = os.getenv("HA_DISCOVERY_PREFIX", "homeassistant")
