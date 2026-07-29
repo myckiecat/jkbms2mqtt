@@ -137,11 +137,38 @@ def parse_batteries(raw):
 # ----------------------------------------------------------------------------
 # Lectura Modbus
 # ----------------------------------------------------------------------------
+import inspect
+
+# pymodbus renombró el argumento de unidad: <=3.6 usa "slave", >=3.7 usa "device_id".
+# Detectamos cuál acepta esta versión una sola vez.
+def _detect_unit_kwarg():
+    try:
+        sig = inspect.signature(ModbusTcpClient.read_holding_registers)
+        params = sig.parameters
+        if "slave" in params:
+            return "slave"
+        if "device_id" in params:
+            return "device_id"
+    except (ValueError, TypeError):
+        pass
+    # Fallback: intentamos slave (versiones antiguas más comunes en la práctica)
+    return "slave"
+
+UNIT_KWARG = _detect_unit_kwarg()
+log.info("pymodbus usa el argumento de unidad: '%s'", UNIT_KWARG)
+
+
+def _read_holding(client, address, count, unit_id):
+    """Lee holding registers de forma compatible con cualquier versión de pymodbus."""
+    kwargs = {"address": address, "count": count, UNIT_KWARG: unit_id}
+    return client.read_holding_registers(**kwargs)
+
+
 def read_registers_block(client, unit_id):
     """Lee en dos bloques grandes. Devuelve dict {abs_addr: value} o None si falla."""
     regs = {}
     for start, count in ((BLOCK1_START, BLOCK1_COUNT), (BLOCK2_START, BLOCK2_COUNT)):
-        rr = client.read_holding_registers(address=start, count=count, slave=unit_id)
+        rr = _read_holding(client, start, count, unit_id)
         if rr.isError():
             log.error("[unit %s] Error leyendo bloque 0x%04X x%d: %s",
                       unit_id, start, count, rr)
@@ -172,7 +199,7 @@ def read_registers_single(client, unit_id):
             needed.append(addr + k)
 
     for addr in needed:
-        rr = client.read_holding_registers(address=addr, count=1, slave=unit_id)
+        rr = _read_holding(client, addr, 1, unit_id)
         if rr.isError():
             log.error("[unit %s] Error leyendo registro 0x%04X: %s", unit_id, addr, rr)
             return None
